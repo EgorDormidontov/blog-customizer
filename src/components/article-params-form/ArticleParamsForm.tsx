@@ -20,56 +20,71 @@ import { Text } from 'src/ui/text';
 import styles from './ArticleParamsForm.module.scss';
 
 type ArticleParamsFormProps = {
-	onChange: (state: ArticleStateType) => void;
+	onApply: (state: ArticleStateType) => void;
 };
 
-export const ArticleParamsForm = ({ onChange }: ArticleParamsFormProps) => {
-	const [isOpen, setIsOpen] = useState(false);
+export const ArticleParamsForm = ({ onApply }: ArticleParamsFormProps) => {
+	const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 	const [formState, setFormState] =
 		useState<ArticleStateType>(defaultArticleState);
 
 	const rootRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
-		const handleOutsideClick = (event: MouseEvent) => {
+		if (!isSidebarOpen) {
+			return;
+		}
+
+		const handleOutsideMouseDown = (event: MouseEvent) => {
 			if (
-				isOpen &&
 				rootRef.current &&
 				!rootRef.current.contains(event.target as Node)
 			) {
-				setIsOpen(false);
+				setIsSidebarOpen(false);
 			}
 		};
 
-		document.addEventListener('click', handleOutsideClick);
+		document.addEventListener('mousedown', handleOutsideMouseDown);
 
 		return () => {
-			document.removeEventListener('click', handleOutsideClick);
+			document.removeEventListener('mousedown', handleOutsideMouseDown);
 		};
-	}, [isOpen]);
+	}, [isSidebarOpen]);
 
 	const handleArrowClick = () => {
-		setIsOpen((prevState) => !prevState);
+		setIsSidebarOpen((prevState) => !prevState);
 	};
+
+	const handleFormChange =
+		<K extends keyof ArticleStateType,>(key: K) =>
+		(value: ArticleStateType[K]) => {
+			setFormState((prevState) => ({
+				...prevState,
+				[key]: value,
+			}));
+		};
 
 	const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 
-		onChange(formState);
+		onApply(formState);
 	};
 
 	const handleReset = () => {
 		setFormState(defaultArticleState);
-		onChange(defaultArticleState);
+		onApply(defaultArticleState);
 	};
 
 	return (
 		<div ref={rootRef}>
-			<ArrowButton isOpen={isOpen} onClick={handleArrowClick} />
+			<ArrowButton
+				isOpen={isSidebarOpen}
+				onClick={handleArrowClick}
+			/>
 
 			<aside
 				className={clsx(styles.container, {
-					[styles.container_open]: isOpen,
+					[styles.container_open]: isSidebarOpen,
 				})}>
 				<form
 					className={styles.form}
@@ -83,12 +98,7 @@ export const ArticleParamsForm = ({ onChange }: ArticleParamsFormProps) => {
 						title='Шрифт'
 						selected={formState.fontFamilyOption}
 						options={fontFamilyOptions}
-						onChange={(fontFamilyOption) =>
-							setFormState({
-								...formState,
-								fontFamilyOption,
-							})
-						}
+						onChange={handleFormChange('fontFamilyOption')}
 					/>
 
 					<RadioGroup
@@ -96,24 +106,14 @@ export const ArticleParamsForm = ({ onChange }: ArticleParamsFormProps) => {
 						name='font-size'
 						selected={formState.fontSizeOption}
 						options={fontSizeOptions}
-						onChange={(fontSizeOption) =>
-							setFormState({
-								...formState,
-								fontSizeOption,
-							})
-						}
+						onChange={handleFormChange('fontSizeOption')}
 					/>
 
 					<Select
 						title='Цвет шрифта'
 						selected={formState.fontColor}
 						options={fontColors}
-						onChange={(fontColor) =>
-							setFormState({
-								...formState,
-								fontColor,
-							})
-						}
+						onChange={handleFormChange('fontColor')}
 					/>
 
 					<Separator />
@@ -122,12 +122,7 @@ export const ArticleParamsForm = ({ onChange }: ArticleParamsFormProps) => {
 						title='Цвет фона'
 						selected={formState.backgroundColor}
 						options={backgroundColors}
-						onChange={(backgroundColor) =>
-							setFormState({
-								...formState,
-								backgroundColor,
-							})
-						}
+						onChange={handleFormChange('backgroundColor')}
 					/>
 
 					<RadioGroup
@@ -135,18 +130,21 @@ export const ArticleParamsForm = ({ onChange }: ArticleParamsFormProps) => {
 						name='content-width'
 						selected={formState.contentWidth}
 						options={contentWidthArr}
-						onChange={(contentWidth) =>
-							setFormState({
-								...formState,
-								contentWidth,
-							})
-						}
+						onChange={handleFormChange('contentWidth')}
 					/>
 
 					<div className={styles.bottomContainer}>
-						<Button title='Сбросить' htmlType='reset' type='clear' />
+						<Button
+							title='Сбросить'
+							htmlType='reset'
+							type='clear'
+						/>
 
-						<Button title='Применить' htmlType='submit' type='apply' />
+						<Button
+							title='Применить'
+							htmlType='submit'
+							type='apply'
+						/>
 					</div>
 				</form>
 			</aside>
